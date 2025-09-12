@@ -19,6 +19,7 @@ class Controller:
 		self.view.cut_action.triggered.connect(self.cut_active_image)
 		self.view.copy_action.triggered.connect(self.copy_active_image)
 		self.view.paste_action.triggered.connect(self.paste_active_image)
+		self.view.save_action.triggered.connect(self.save_active_image)
 
 	def show(self):
 		self.view.show()
@@ -41,8 +42,6 @@ class Controller:
 				self.image_window = View(show_menu=False)
 				self.image_window.apply_model(self.model)
 				self.image_window.display_image(pixmap)
-				# Resize image window to fit the image
-				self.image_window.resize(pixmap.width(), pixmap.height())
 				self.image_window.show()
 
 	def cut_active_image(self):
@@ -56,3 +55,7 @@ class Controller:
 	def paste_active_image(self):
 		if self.image_window:
 			self.image_window.paste_selection()
+
+	def save_active_image(self):
+		if self.image_window:
+			self.image_window.save_image()

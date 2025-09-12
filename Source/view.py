@@ -66,6 +66,10 @@ class View(QMainWindow):
 
         self.open_action = open_action
 
+        save_action = QAction("Save", self)
+        file_menu.addAction(save_action)
+        self.save_action = save_action
+
         cut_action = QAction("Cut", self)
         edit_menu.addAction(cut_action)
         self.cut_action = cut_action
@@ -83,24 +87,24 @@ class View(QMainWindow):
     def display_image(self, qt_pixmap):
         # Get desktop size
         desktop = self.screen().geometry()
-        max_width = desktop.width() * 0.9
-        max_height = desktop.height() * 0.9
+        max_width = int(desktop.width() * 0.9)
+        max_height = int(desktop.height() * 0.9)
 
         img_width = qt_pixmap.width()
         img_height = qt_pixmap.height()
 
         # If image is larger than desktop, scale it down
         if img_width > max_width or img_height > max_height:
-            scale_w = min(img_width, max_width)
-            scale_h = min(img_height, max_height)
             scaled_pixmap = qt_pixmap.scaled(
                 max_width, max_height,
                 Qt.AspectRatioMode.KeepAspectRatio,
                 Qt.TransformationMode.SmoothTransformation
             )
             self.image_label.setPixmap(scaled_pixmap)
+            self.resize(scaled_pixmap.width(), scaled_pixmap.height())
         else:
             self.image_label.setPixmap(qt_pixmap)
+            self.resize(img_width, img_height)
 
     def copy_selection(self):
         pixmap = self.image_label.pixmap()
@@ -150,3 +154,12 @@ class View(QMainWindow):
         self.image_label.selection_start = None
         self.image_label.selection_end = None
         self.image_label.update()
+
+    def save_image(self):
+        pixmap = self.image_label.pixmap()
+        if not pixmap:
+            return
+        from PyQt6.QtWidgets import QFileDialog
+        file_path, _ = QFileDialog.getSaveFileName(self, "Save Image", "", "PNG Files (*.png);;BMP Files (*.bmp)")
+        if file_path:
+            pixmap.save(file_path)
