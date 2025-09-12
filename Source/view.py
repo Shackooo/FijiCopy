@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import QMainWindow, QLabel
-from PyQt6.QtGui import QAction, QPainter, QPen
+from PyQt6.QtGui import QAction, QPainter, QPen, QPixmap
 from PyQt6.QtCore import Qt, QPoint, QRect
 
 
@@ -42,13 +42,14 @@ class ImageLabel(QLabel):
 
 
 class View(QMainWindow):
-    def __init__(self):
+    def __init__(self, show_menu=True):
         super().__init__()
-        self.create_menu()
-
+        if show_menu:
+            self.create_menu()
         self.image_label = ImageLabel(self)
         self.setCentralWidget(self.image_label)
         self.setMinimumSize(100, 50)  # Allow window to be very small
+        self.show_menu = show_menu
 
     def apply_model(self, model):
         self.setWindowTitle(model.window_title)
@@ -64,6 +65,20 @@ class View(QMainWindow):
         file_menu.addAction(open_action)
 
         self.open_action = open_action
+
+        cut_action = QAction("Cut", self)
+        edit_menu.addAction(cut_action)
+        self.cut_action = cut_action
+
+        self.cut_action.triggered.connect(self.cut_selection)
+
+        copy_action = QAction("Copy", self)
+        edit_menu.addAction(copy_action)
+        self.copy_action = copy_action
+
+        paste_action = QAction("Paste", self)
+        edit_menu.addAction(paste_action)
+        self.paste_action = paste_action
 
     def display_image(self, qt_pixmap):
         # Get desktop size
@@ -86,3 +101,52 @@ class View(QMainWindow):
             self.image_label.setPixmap(scaled_pixmap)
         else:
             self.image_label.setPixmap(qt_pixmap)
+
+    def copy_selection(self):
+        pixmap = self.image_label.pixmap()
+        if not pixmap or not self.image_label.selection_start or not self.image_label.selection_end:
+            return
+        rect = QRect(self.image_label.selection_start, self.image_label.selection_end).normalized()
+        image = pixmap.toImage()
+        # Copy selected area to buffer
+        self.copied_image = image.copy(rect)
+
+    def cut_selection(self):
+        pixmap = self.image_label.pixmap()
+        if not pixmap or not self.image_label.selection_start or not self.image_label.selection_end:
+            return
+        rect = QRect(self.image_label.selection_start, self.image_label.selection_end).normalized()
+        image = pixmap.toImage()
+        # Copy selected area to buffer
+        self.copied_image = image.copy(rect)
+        # Fill selected area with black
+        for x in range(rect.left(), rect.right()):
+            for y in range(rect.top(), rect.bottom()):
+                if 0 <= x < image.width() and 0 <= y < image.height():
+                    image.setPixel(x, y, 0xFF000000)  # ARGB black
+        new_pixmap = QPixmap.fromImage(image)
+        self.image_label.setPixmap(new_pixmap)
+        self.image_label.selection_start = None
+        self.image_label.selection_end = None
+        self.image_label.update()
+
+    def paste_selection(self):
+        pixmap = self.image_label.pixmap()
+        if not pixmap or not hasattr(self, 'copied_image') or self.copied_image is None:
+            return
+        if not self.image_label.selection_start or not self.image_label.selection_end:
+            return
+        rect = QRect(self.image_label.selection_start, self.image_label.selection_end).normalized()
+        image = pixmap.toImage()
+        # Paste copied image at top-left of selection
+        paste_x = rect.left()
+        paste_y = rect.top()
+        for x in range(self.copied_image.width()):
+            for y in range(self.copied_image.height()):
+                if 0 <= paste_x + x < image.width() and 0 <= paste_y + y < image.height():
+                    image.setPixel(paste_x + x, paste_y + y, self.copied_image.pixel(x, y))
+        new_pixmap = QPixmap.fromImage(image)
+        self.image_label.setPixmap(new_pixmap)
+        self.image_label.selection_start = None
+        self.image_label.selection_end = None
+        self.image_label.update()
