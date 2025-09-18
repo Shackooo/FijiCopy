@@ -1,2 +1,4 @@
 pyqt
 pillow
+scipy
+imageio

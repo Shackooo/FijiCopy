@@ -9,7 +9,6 @@ class Controller:
 		self.model = Model()
 		self.view = View()
 		self.view.apply_model(self.model)
-		self.view.resize(640, 108)  # Set initial main window size
 
 		# Reference to the single image window
 		self.image_window = None
@@ -20,6 +19,7 @@ class Controller:
 		self.view.copy_action.triggered.connect(self.copy_active_image)
 		self.view.paste_action.triggered.connect(self.paste_active_image)
 		self.view.save_action.triggered.connect(self.save_active_image)
+		# Remove connection for Gaussian Filter action
 
 	def show(self):
 		self.view.show()
@@ -34,7 +34,7 @@ class Controller:
 
 		if file_path:
 			pixmap = self.model.load_image(file_path)
-			if pixmap:
+			if pixmap is not None:
 				# Close previous image window if open
 				if self.image_window:
 					self.image_window.close()
