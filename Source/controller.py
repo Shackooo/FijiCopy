@@ -14,12 +14,13 @@ class Controller:
 		# Reference to the single image window
 		self.image_window = None
 
-		# Connecting the "Open..." action
+		# Connecting the actions
 		self.view.open_action.triggered.connect(self.open_file)
 		self.view.cut_action.triggered.connect(self.cut_active_image)
 		self.view.copy_action.triggered.connect(self.copy_active_image)
 		self.view.paste_action.triggered.connect(self.paste_active_image)
 		self.view.save_action.triggered.connect(self.save_active_image)
+		self.view.gaussian_action.triggered.connect(self.gaussian_filter)
 
 	def show(self):
 		self.view.show()
@@ -59,3 +60,7 @@ class Controller:
 	def save_active_image(self):
 		if self.image_window:
 			self.image_window.save_image()
+
+	def gaussian_filter(self):
+		if self.image_window:
+			self.image_window.apply_gaussian_filter()

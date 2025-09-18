@@ -1,6 +1,10 @@
 from PyQt6.QtWidgets import QMainWindow, QLabel
 from PyQt6.QtGui import QAction, QPainter, QPen, QPixmap
 from PyQt6.QtCore import Qt, QPoint, QRect
+import numpy as np
+from PyQt6.QtGui import QImage
+from scipy.ndimage import gaussian_filter
+import qimage2ndarray
 
 
 class ImageLabel(QLabel):
@@ -63,7 +67,6 @@ class View(QMainWindow):
 
         open_action = QAction("Open...", self)
         file_menu.addAction(open_action)
-
         self.open_action = open_action
 
         save_action = QAction("Save", self)
@@ -74,8 +77,6 @@ class View(QMainWindow):
         edit_menu.addAction(cut_action)
         self.cut_action = cut_action
 
-        self.cut_action.triggered.connect(self.cut_selection)
-
         copy_action = QAction("Copy", self)
         edit_menu.addAction(copy_action)
         self.copy_action = copy_action
@@ -83,6 +84,11 @@ class View(QMainWindow):
         paste_action = QAction("Paste", self)
         edit_menu.addAction(paste_action)
         self.paste_action = paste_action
+
+        gaussian_action = QAction("Apply Gaussian Filter", self)
+        edit_menu.addAction(gaussian_action)
+        self.gaussian_action = gaussian_action
+        
 
     def display_image(self, qt_pixmap):
         # Get desktop size
@@ -163,3 +169,31 @@ class View(QMainWindow):
         file_path, _ = QFileDialog.getSaveFileName(self, "Save Image", "", "PNG Files (*.png);;BMP Files (*.bmp)")
         if file_path:
             pixmap.save(file_path)
+
+    def qimage_to_numpy(self, qimage):
+        """Convert QImage to NumPy array using qimage2ndarray."""
+        arr = qimage2ndarray.rgb_view(qimage)
+        return arr
+
+    def numpy_to_qpixmap(self, arr):
+        """Convert NumPy array to QPixmap using qimage2ndarray."""
+        qimage = qimage2ndarray.array2qimage(arr)
+        return QPixmap.fromImage(qimage)
+
+    def apply_gaussian_filter(self, sigma=10):
+        pixmap = self.image_label.pixmap()
+        if pixmap is None or pixmap.isNull():
+            return
+        qimage = pixmap.toImage()
+        arr = self.qimage_to_numpy(qimage)
+        # Ensure array is valid and has correct shape
+        if arr is None or arr.shape[0] == 0 or arr.shape[1] == 0:
+            return
+        filtered = np.zeros_like(arr)
+        for i in range(arr.shape[2]):
+            filtered[..., i] = gaussian_filter(arr[..., i], sigma=sigma)
+        filtered = filtered.astype(np.uint8)
+        filtered_pixmap = self.numpy_to_qpixmap(filtered)
+        if filtered_pixmap is not None and not filtered_pixmap.isNull():
+            self.image_label.setPixmap(filtered_pixmap)
+            self.resize(filtered_pixmap.width(), filtered_pixmap.height())
