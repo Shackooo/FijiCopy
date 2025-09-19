@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QMainWindow, QLabel
+from PyQt6.QtWidgets import QMainWindow, QLabel, QGroupBox, QFormLayout, QSlider, QVBoxLayout, QWidget
 from PyQt6.QtGui import QAction, QPainter, QPen, QPixmap
 from PyQt6.QtCore import Qt, QPoint, QRect
 import numpy as np
@@ -50,10 +50,45 @@ class View(QMainWindow):
         super().__init__()
         if show_menu:
             self.create_menu()
-        self.image_label = ImageLabel(self)
-        self.setCentralWidget(self.image_label)
+            # Add the brightness/contrast panel below the menu
+            central_widget = QWidget()
+            v_layout = QVBoxLayout()
+            v_layout.addWidget(self.create_brightness_contrast_panel())
+            v_layout.addWidget(ImageLabel(self))
+            central_widget.setLayout(v_layout)
+            self.setCentralWidget(central_widget)
+        else:
+            self.image_label = ImageLabel(self)
+            self.setCentralWidget(self.image_label)
         self.setMinimumSize(100, 50)  # Allow window to be very small
         self.show_menu = show_menu
+
+    def create_brightness_contrast_panel(self):
+        panel = QGroupBox("Brightness & Contrast")
+        layout = QFormLayout()
+
+        self.min_slider = QSlider(Qt.Orientation.Horizontal)
+        self.min_slider.setRange(0, 255)
+        self.min_slider.setValue(0)
+        layout.addRow("Minimum", self.min_slider)
+
+        self.max_slider = QSlider(Qt.Orientation.Horizontal)
+        self.max_slider.setRange(0, 255)
+        self.max_slider.setValue(255)
+        layout.addRow("Maximum", self.max_slider)
+
+        self.brightness_slider = QSlider(Qt.Orientation.Horizontal)
+        self.brightness_slider.setRange(-128, 127)
+        self.brightness_slider.setValue(0)
+        layout.addRow("Brightness", self.brightness_slider)
+
+        self.contrast_slider = QSlider(Qt.Orientation.Horizontal)
+        self.contrast_slider.setRange(0, 255)
+        self.contrast_slider.setValue(128)
+        layout.addRow("Contrast", self.contrast_slider)
+
+        panel.setLayout(layout)
+        return panel
 
     def apply_model(self, model):
         self.setWindowTitle(model.window_title)
@@ -173,7 +208,7 @@ class View(QMainWindow):
     def qimage_to_numpy(self, qimage):
         """Convert QImage to NumPy array using qimage2ndarray."""
         arr = qimage2ndarray.rgb_view(qimage)
-        return arr
+        return  arr
 
     def numpy_to_qpixmap(self, arr):
         """Convert NumPy array to QPixmap using qimage2ndarray."""
@@ -197,3 +232,4 @@ class View(QMainWindow):
         if filtered_pixmap is not None and not filtered_pixmap.isNull():
             self.image_label.setPixmap(filtered_pixmap)
             self.resize(filtered_pixmap.width(), filtered_pixmap.height())
+            
